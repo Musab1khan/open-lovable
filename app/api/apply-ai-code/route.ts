@@ -212,7 +212,6 @@ export async function POST(request: NextRequest) {
         } catch (fetchError) {
           console.error('[apply-ai-code] Fetch error during package installation:', fetchError);
           results.errors.push(`Package installation fetch failed: ${(fetchError as Error).message}`);
-          }
         }
       } catch (error) {
         console.error('[apply-ai-code] Error installing packages:', error);
@@ -254,55 +253,52 @@ export async function POST(request: NextRequest) {
             const packageResult = await packageResponse.json();
             console.log('[apply-ai-code] Package installation result:', JSON.stringify(packageResult, null, 2));
           
-          if (packageResult.packagesInstalled && packageResult.packagesInstalled.length > 0) {
-            results.packagesInstalled = packageResult.packagesInstalled;
-            console.log(`[apply-ai-code] Installed packages: ${packageResult.packagesInstalled.join(', ')}`);
-          }
-          
-          if (packageResult.packagesAlreadyInstalled && packageResult.packagesAlreadyInstalled.length > 0) {
-            results.packagesAlreadyInstalled = packageResult.packagesAlreadyInstalled;
-            console.log(`[apply-ai-code] Already installed: ${packageResult.packagesAlreadyInstalled.join(', ')}`);
-          }
-          
-          if (packageResult.packagesFailed && packageResult.packagesFailed.length > 0) {
-            results.packagesFailed = packageResult.packagesFailed;
-            console.error(`[apply-ai-code] Failed to install packages: ${packageResult.packagesFailed.join(', ')}`);
-            results.errors.push(`Failed to install packages: ${packageResult.packagesFailed.join(', ')}`);
-          }
-          
-          // Force Vite restart after package installation
-          if (results.packagesInstalled.length > 0) {
-            console.log('[apply-ai-code] Packages were installed, forcing Vite restart...');
-            
-            try {
-              // Call the restart-vite endpoint
-              const restartResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/restart-vite`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-              });
-              
-              if (restartResponse.ok) {
-                const restartResult = await restartResponse.json();
-                console.log('[apply-ai-code] Vite restart result:', restartResult.message);
-              } else {
-                console.error('[apply-ai-code] Failed to restart Vite:', await restartResponse.text());
-              }
-            } catch (restartError) {
-              console.error('[apply-ai-code] Error calling restart-vite:', restartError);
+            if (packageResult.packagesInstalled && packageResult.packagesInstalled.length > 0) {
+              results.packagesInstalled = packageResult.packagesInstalled;
+              console.log(`[apply-ai-code] Installed packages: ${packageResult.packagesInstalled.join(', ')}`);
             }
             
-            // Additional delay to ensure files can be written after restart
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
+            if (packageResult.packagesAlreadyInstalled && packageResult.packagesAlreadyInstalled.length > 0) {
+              results.packagesAlreadyInstalled = packageResult.packagesAlreadyInstalled;
+              console.log(`[apply-ai-code] Already installed: ${packageResult.packagesAlreadyInstalled.join(', ')}`);
+            }
+            
+            if (packageResult.packagesFailed && packageResult.packagesFailed.length > 0) {
+              results.packagesFailed = packageResult.packagesFailed;
+              console.error(`[apply-ai-code] Failed to install packages: ${packageResult.packagesFailed.join(', ')}`);
+              results.errors.push(`Failed to install packages: ${packageResult.packagesFailed.join(', ')}`);
+            }
+            
+            // Force Vite restart after package installation
+            if (results.packagesInstalled.length > 0) {
+              console.log('[apply-ai-code] Packages were installed, forcing Vite restart...');
+              
+              try {
+                // Call the restart-vite endpoint
+                const restartResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/restart-vite`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (restartResponse.ok) {
+                  const restartResult = await restartResponse.json();
+                  console.log('[apply-ai-code] Vite restart result:', restartResult.message);
+                } else {
+                  console.error('[apply-ai-code] Failed to restart Vite:', await restartResponse.text());
+                }
+              } catch (restartError) {
+                console.error('[apply-ai-code] Error calling restart-vite:', restartError);
+              }
+              
+              // Additional delay to ensure files can be written after restart
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
           } else {
             console.error('[apply-ai-code] Package detection/installation failed:', await packageResponse.text());
           }
         } catch (fetchError) {
           console.error('[apply-ai-code] Fetch error during package detection:', fetchError);
           results.errors.push(`Package detection fetch failed: ${(fetchError as Error).message}`);
-        }
-        } else {
-          console.error('[apply-ai-code] Package detection/installation failed:', await packageResponse.text());
         }
       } catch (error) {
         console.error('[apply-ai-code] Error detecting/installing packages:', error);
@@ -477,39 +473,14 @@ print(f"Auto-generated: {file_path}")
 file_path = "/home/user/app/src/index.css"
 file_content = """@tailwind base;
 @tailwind components;
-@tailwind utilities;
+@tailwind utilit\ies;
+"""
 
-          try {
-            const autoCompleteResponse = await fetch(
-              `${request.nextUrl.origin}/api/auto-complete-components`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  missingImports,
-                  model: 'claude-sonnet-4-20250514'
-                })
-              }
-            );
-            
-            const autoCompleteData = await autoCompleteResponse.json();
-            
-            if (autoCompleteData.success) {
-              responseData.autoCompleted = true;
-              responseData.autoCompletedComponents = autoCompleteData.components;
-              responseData.message = `Applied ${results.filesCreated.length} files + auto-generated ${autoCompleteData.files} missing components`;
-              
-              // Add auto-completed files to results
-              results.filesCreated.push(...autoCompleteData.components);
-            } else {
-              // If auto-complete fails, still warn the user
-              responseData.warning = `Missing ${missingImports.length} imported components: ${missingImports.join(', ')}`;
-              responseData.missingImports = missingImports;
-            }
-          } catch (fetchError) {
-            console.error('[apply-ai-code] Fetch error during auto-complete:', fetchError);
-            responseData.warning = `Missing ${missingImports.length} imported components: ${missingImports.join(', ')} (auto-complete failed)`;
-            responseData.missingImports = missingImports;
+with open(file\_path, 'w') as f:
+    f.write(file_\content)
+
+print(f"Auto-generated: {file_path}")
+          \`);
           results.filesCreated.push('src/index.css (with Tailwind)');
         } catch (error) {
           results.errors.push('Failed to create index.css with Tailwind');
@@ -531,7 +502,7 @@ if result.stderr:
         `);
         results.commandsExecuted.push(cmd);
       } catch (error) {
-        results.errors.push(`Failed to execute ${cmd}: ${(error as Error).message}`);
+        results.errors.push(\`Failed to execute ${cmd}: ${(error as Error).message}`);
       }
     }
     
@@ -584,7 +555,7 @@ if result.stderr:
       results,
       explanation: parsed.explanation,
       structure: parsed.structure,
-      message: `Applied ${results.filesCreated.length} files successfully`
+      message: \`Applied ${results.filesCreated.length} files successfully`
     };
     
     // Handle missing imports automatically
@@ -596,7 +567,7 @@ if result.stderr:
         console.log('[apply-ai-code] Auto-generating missing components...');
         
         const autoCompleteResponse = await fetch(
-          `${request.nextUrl.origin}/api/auto-complete-components`,
+          \`${request.nextUrl.origin}/api/auto-complete-components`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -612,18 +583,18 @@ if result.stderr:
         if (autoCompleteData.success) {
           responseData.autoCompleted = true;
           responseData.autoCompletedComponents = autoCompleteData.components;
-          responseData.message = `Applied ${results.filesCreated.length} files + auto-generated ${autoCompleteData.files} missing components`;
+          responseData.message = \`Applied ${results.filesCreated.length} files + auto-generated ${autoCompleteData.files} missing components`;
           
           // Add auto-completed files to results
           results.filesCreated.push(...autoCompleteData.components);
         } else {
           // If auto-complete fails, still warn the user
-          responseData.warning = `Missing ${missingImports.length} imported components: ${missingImports.join(', ')}`;
+          responseData.warning = \`Missing ${missingImports.length} imported components: ${missingImports.join(', ')}`;
           responseData.missingImports = missingImports;
         }
       } catch (error) {
         console.error('[apply-ai-code] Auto-complete failed:', error);
-        responseData.warning = `Missing ${missingImports.length} imported components: ${missingImports.join(', ')}`;
+        responseData.warning = \`Missing ${missingImports.length} imported components: ${missingImports.join(', ')}`;
         responseData.missingImports = missingImports;
       }
     }
