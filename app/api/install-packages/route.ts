@@ -93,7 +93,8 @@ import signal
 
 # Try to kill any existing Vite process
 try:
-    with open('/tmp/vite-process.pid', 'r') as f:
+    pid_file = '/tmp/vite-process.pid'
+    with open(pid_file, 'r') as f:
         pid = int(f.read().strip())
         os.kill(pid, signal.SIGTERM)
         print("Stopped existing Vite process")
@@ -318,7 +319,9 @@ process = subprocess.Popen(
 print(f'✓ Vite dev server restarted with PID: {process.pid}')
 
 # Store process info for later
-with open('/tmp/vite-process.pid', 'w') as f:
+pid_file = '/tmp/vite-process.pid'
+os.makedirs(os.path.dirname(pid_file), exist_ok=True)
+with open(pid_file, 'w') as f:
     f.write(str(process.pid))
 
 # Wait a bit for Vite to start up

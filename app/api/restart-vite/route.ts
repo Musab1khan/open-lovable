@@ -39,6 +39,7 @@ os.chdir('/home/user/app')
 
 # Clear error file
 error_file = '/tmp/vite-errors.json'
+os.makedirs(os.path.dirname(error_file), exist_ok=True)
 with open(error_file, 'w') as f:
     json.dump({"errors": [], "lastChecked": time.time()}, f)
 
@@ -87,7 +88,8 @@ def monitor_output(proc, error_file):
                             # Avoid duplicates
                             if not any(e['package'] == error_obj['package'] for e in data['errors']):
                                 data['errors'].append(error_obj)
-                                
+                            
+                            os.makedirs(os.path.dirname(error_file), exist_ok=True)
                             with open(error_file, 'w') as f:
                                 json.dump(data, f)
                                 
@@ -112,7 +114,9 @@ monitor_thread.start()
 print("Vite restarted successfully!")
 
 # Store process info for later
-with open('/tmp/vite-process.pid', 'w') as f:
+pid_file = '/tmp/vite-process.pid'
+os.makedirs(os.path.dirname(pid_file), exist_ok=True)
+with open(pid_file, 'w') as f:
     f.write(str(process.pid))
 
 # Wait for Vite to fully start
