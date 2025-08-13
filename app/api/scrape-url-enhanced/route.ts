@@ -35,34 +35,42 @@ export async function POST(request: NextRequest) {
     }
     
     // Make request to Firecrawl API with maxAge for 500% faster scraping
-    const firecrawlResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        url,
-        formats: ['markdown', 'html'],
-        waitFor: 3000,
-        timeout: 30000,
-        blockAds: true,
-        maxAge: 3600000, // Use cached data if less than 1 hour old (500% faster!)
-        actions: [
-          {
-            type: 'wait',
-            milliseconds: 2000
-          }
-        ]
-      })
-    });
+    let firecrawlResponse;
+    let data;
     
-    if (!firecrawlResponse.ok) {
-      const error = await firecrawlResponse.text();
-      throw new Error(`Firecrawl API error: ${error}`);
+    try {
+      firecrawlResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          url,
+          formats: ['markdown', 'html'],
+          waitFor: 3000,
+          timeout: 30000,
+          blockAds: true,
+          maxAge: 3600000, // Use cached data if less than 1 hour old (500% faster!)
+          actions: [
+            {
+              type: 'wait',
+              milliseconds: 2000
+            }
+          ]
+        })
+      });
+      
+      if (!firecrawlResponse.ok) {
+        const error = await firecrawlResponse.text();
+        throw new Error(`Firecrawl API error: ${error}`);
+      }
+      
+      data = await firecrawlResponse.json();
+    } catch (fetchError) {
+      console.error('Firecrawl fetch error:', fetchError);
+      throw new Error(`Failed to connect to Firecrawl API: ${(fetchError as Error).message}`);
     }
-    
-    const data = await firecrawlResponse.json();
     
     if (!data.success || !data.data) {
       throw new Error('Failed to scrape content');

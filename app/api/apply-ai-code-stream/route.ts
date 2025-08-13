@@ -427,48 +427,65 @@ export async function POST(request: NextRequest) {
             const host = req.headers.get('host') || 'localhost:3000';
             const apiUrl = `${protocol}://${host}/api/install-packages`;
             
-            const installResponse = await fetch(apiUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
-                packages: uniquePackages,
-                sandboxId: sandboxId || (sandboxInstance as any).sandboxId
-              })
-            });
-            
-            if (installResponse.ok && installResponse.body) {
-              const reader = installResponse.body.getReader();
-              const decoder = new TextDecoder();
+            try {
+              const installResponse = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                  packages: uniquePackages,
+                  sandboxId: sandboxId || (sandboxInstance as any).sandboxId
+                })
+              });
               
-              while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
+              if (installResponse.ok && installResponse.body) {
+                const reader = installResponse.body.getReader();
+                const decoder = new TextDecoder();
                 
-                const chunk = decoder.decode(value);
-                if (!chunk) continue;
-                const lines = chunk.split('\n');
-                
-                for (const line of lines) {
-                  if (line.startsWith('data: ')) {
-                    try {
-                      const data = JSON.parse(line.slice(6));
-                      
-                      // Forward package installation progress
-                      await sendProgress({
-                        type: 'package-progress',
-                        ...data
-                      });
-                      
-                      // Track results
-                      if (data.type === 'success' && data.installedPackages) {
-                        results.packagesInstalled = data.installedPackages;
+                try {
+                  while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value);
+                    if (!chunk) continue;
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                      if (line.startsWith('data: ')) {
+                        try {
+                          const data = JSON.parse(line.slice(6));
+                          
+                          // Forward package installation progress
+                          await sendProgress({
+                            type: 'package-progress',
+                            ...data
+                          });
+                          
+                          // Track results
+                          if (data.type === 'success' && data.installedPackages) {
+                            results.packagesInstalled = data.installedPackages;
+                          }
+                        } catch (e) {
+                          // Ignore parse errors
+                        }
                       }
-                    } catch (e) {
-                      // Ignore parse errors
                     }
                   }
+                } catch (readerError) {
+                  console.error('[apply-ai-code-stream] Stream reader error:', readerError);
+                  await sendProgress({
+                    type: 'warning',
+                    message: `Package installation stream interrupted: ${(readerError as Error).message}`
+                  });
                 }
               }
+            } catch (fetchError) {
+              console.error('[apply-ai-code-stream] Fetch error during package installation:', fetchError);
+              await sendProgress({
+                type: 'warning',
+                message: `Package installation fetch failed: ${(fetchError as Error).message}. Continuing with file creation...`
+              });
+              results.errors.push(`Package installation fetch failed: ${(fetchError as Error).message}`);
             }
           } catch (error) {
             console.error('[apply-ai-code-stream] Error installing packages:', error);

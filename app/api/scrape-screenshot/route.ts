@@ -9,33 +9,41 @@ export async function POST(req: NextRequest) {
     }
 
     // Use Firecrawl API to capture screenshot
-    const firecrawlResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.FIRECRAWL_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        url,
-        formats: ['screenshot'], // Regular viewport screenshot, not full page
-        waitFor: 3000, // Wait for page to fully load
-        timeout: 30000,
-        blockAds: true,
-        actions: [
-          {
-            type: 'wait',
-            milliseconds: 2000 // Additional wait for dynamic content
-          }
-        ]
-      })
-    });
+    let firecrawlResponse;
+    let data;
+    
+    try {
+      firecrawlResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.FIRECRAWL_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          url,
+          formats: ['screenshot'], // Regular viewport screenshot, not full page
+          waitFor: 3000, // Wait for page to fully load
+          timeout: 30000,
+          blockAds: true,
+          actions: [
+            {
+              type: 'wait',
+              milliseconds: 2000 // Additional wait for dynamic content
+            }
+          ]
+        })
+      });
 
-    if (!firecrawlResponse.ok) {
-      const error = await firecrawlResponse.text();
-      throw new Error(`Firecrawl API error: ${error}`);
+      if (!firecrawlResponse.ok) {
+        const error = await firecrawlResponse.text();
+        throw new Error(`Firecrawl API error: ${error}`);
+      }
+
+      data = await firecrawlResponse.json();
+    } catch (fetchError) {
+      console.error('Firecrawl fetch error:', fetchError);
+      throw new Error(`Failed to connect to Firecrawl API: ${(fetchError as Error).message}`);
     }
-
-    const data = await firecrawlResponse.json();
     
     if (!data.success || !data.data?.screenshot) {
       throw new Error('Failed to capture screenshot');
