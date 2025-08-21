@@ -169,6 +169,13 @@
     background-color: theme('colors.background');
     color: theme('colors.foreground');
   }
+  
+  /* Prevent layout shift from error messages */
+  .error-message {
+    min-height: 1.5rem;
+    display: flex;
+    align-items: center;
+  }
 }
 
 @layer utilities {

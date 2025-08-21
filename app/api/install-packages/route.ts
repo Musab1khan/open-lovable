@@ -41,6 +41,16 @@ export async function POST(request: NextRequest) {
     
     if (!sandbox && sandboxId) {
       console.log(`[install-packages] Reconnecting to sandbox ${sandboxId}...`);
+      
+      // Check for API key before attempting reconnection
+      if (!process.env.E2B_API_KEY) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'E2B_API_KEY is required for sandbox operations. Please add it to your .env.local file.',
+          details: 'Get your API key from https://e2b.dev and add E2B_API_KEY=your_key to .env.local'
+        }, { status: 500 });
+      }
+      
       try {
         sandbox = await Sandbox.connect(sandboxId, { apiKey: process.env.E2B_API_KEY });
         global.activeSandbox = sandbox;

@@ -8,6 +8,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 });
     }
 
+    // Check for required API key first
+    if (!process.env.FIRECRAWL_API_KEY) {
+      return NextResponse.json({
+        error: 'FIRECRAWL_API_KEY is required. Please add it to your .env.local file.',
+        details: 'Get your API key from https://firecrawl.dev and add FIRECRAWL_API_KEY=your_key to .env.local'
+      }, { status: 500 });
+    }
+
     // Use Firecrawl API to capture screenshot
     let firecrawlResponse;
     let data;
