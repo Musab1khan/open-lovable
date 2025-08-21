@@ -32,7 +32,17 @@ export async function POST() {
       try {
         await global.activeSandbox.kill();
       } catch (e) {
-        console.error('Failed to close existing sandbox:', e);
+        // Check if this is a connection error (sandbox already terminated)
+        const errorMessage = e instanceof Error ? e.message : String(e);
+        const isConnectionError = errorMessage.includes('fetch failed') || 
+                                 errorMessage.includes('other side closed') ||
+                                 errorMessage.includes('SocketError');
+        
+        if (isConnectionError) {
+          console.warn('Sandbox connection already closed (expected if sandbox terminated):', errorMessage);
+        } else {
+          console.error('Failed to close existing sandbox:', e);
+        }
       }
       global.activeSandbox = null;
     }
