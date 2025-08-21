@@ -31,7 +31,11 @@ export async function POST(request: NextRequest) {
     
     const FIRECRAWL_API_KEY = process.env.FIRECRAWL_API_KEY;
     if (!FIRECRAWL_API_KEY) {
-      throw new Error('FIRECRAWL_API_KEY environment variable is not set');
+      return NextResponse.json({
+        success: false,
+        error: 'FIRECRAWL_API_KEY is required. Please add it to your .env.local file.',
+        details: 'Get your API key from https://firecrawl.dev and add FIRECRAWL_API_KEY=your_key to .env.local'
+      }, { status: 500 });
     }
     
     // Make request to Firecrawl API with maxAge for 500% faster scraping

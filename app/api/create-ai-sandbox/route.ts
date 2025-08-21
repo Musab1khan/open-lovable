@@ -15,6 +15,15 @@ export async function POST() {
   let sandbox: any = null;
 
   try {
+    // Check for required API key first
+    if (!process.env.E2B_API_KEY) {
+      console.error('[create-ai-sandbox] E2B_API_KEY is missing from environment variables');
+      return NextResponse.json({
+        error: 'E2B_API_KEY is required. Please add it to your .env.local file.',
+        details: 'Get your API key from https://e2b.dev and add E2B_API_KEY=your_key to .env.local'
+      }, { status: 500 });
+    }
+
     console.log('[create-ai-sandbox] Creating base sandbox...');
     
     // Kill existing sandbox if any
